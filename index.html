@@ -86,22 +86,16 @@
             align-items: center;
         }
 
-        .header-icon {
-            width: 44px;
-            height: 44px;
-            margin-bottom: 12px;
-            background: rgba(108, 99, 255, 0.08);
-            border: 1px solid rgba(108, 99, 255, 0.15);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .header-logo {
+            margin-bottom: 20px;
+            filter: drop-shadow(0 8px 16px rgba(108, 99, 255, 0.25));
+            animation: floatLogo 6s ease-in-out infinite;
         }
 
-        .header-icon svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--accent-primary);
+        @keyframes floatLogo {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
         }
 
         .header h1 {
@@ -109,10 +103,7 @@
             font-weight: 900;
             letter-spacing: -0.03em;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #1a1a2e 0%, var(--accent-primary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #0f172a; /* Solid very dark blue/black for max legibility */
             line-height: 1.1;
         }
 
@@ -901,9 +892,17 @@
     <div class="container">
         <!-- HEADER -->
         <header class="header">
-            <div class="header-icon">
-                <svg viewBox="0 0 24 24"><path d="M9.68 13.69L12 11.93l2.31 1.76-.88-2.85L15.75 9h-2.84L12 6.19 11.09 9H8.25l2.31 1.84-.88 2.85zM20 10c0-4.42-3.58-8-8-8s-8 3.58-8 8c0 2.03.74 3.87 1.98 5.3L4 21l3.52-.97 2.45 2.19L12 21l2.03 1.22 2.45-2.19L20 21l-1.98-5.7C19.26 13.87 20 12.03 20 10zM12 16c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
-            </div>
+            <svg class="header-logo" width="64" height="64" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M28 2L52 16V40L28 54L4 40V16L28 2Z" fill="url(#hexGrad)"/>
+                <path d="M28 14L42 22.5V36.5L28 45L14 36.5V22.5L28 14Z" fill="white" opacity="0.2"/>
+                <path d="M28 22L35 26V32L28 36L21 32V26L28 22Z" fill="white"/>
+                <defs>
+                    <linearGradient id="hexGrad" x1="4" y1="2" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#6C63FF"/>
+                        <stop offset="1" stop-color="#FF6B35"/>
+                    </linearGradient>
+                </defs>
+            </svg>
             <h1>Gestor de Certificados ARCA</h1>
             <p>Generá tus archivos de facturación electrónica de forma segura</p>
         </header>
