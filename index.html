@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Certificados ARCA (2026) — Grupo Oleum</title>
+    <meta name="description" content="Generador de certificados digitales para facturación electrónica ARCA/AFIP. Creá tu CSR, KEY y PFX de forma segura y sin instalar nada.">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
+    <style>
+        /* ============================================
+           RESET & VARIABLES
+           ============================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: rgba(30, 30, 55, 0.7);
+            --bg-card-hover: rgba(40, 40, 70, 0.8);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-focus: #6c63ff;
+
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6b6b85;
+            --text-heading: #ffffff;
+
+            --accent-primary: #6c63ff;
+            --accent-primary-hover: #5a52e0;
+            --accent-secondary: #00d4aa;
+            --accent-warning: #ffb347;
+            --accent-danger: #ff6b6b;
+            --accent-success: #00d4aa;
+            --accent-info: #4fc3f7;
+
+            --gradient-primary: linear-gradient(135deg, #6c63ff 0%, #48a9fe 100%);
+            --gradient-success: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            --gradient-purple: linear-gradient(135deg, #6c63ff 0%, #a855f7 100%);
+            --gradient-bg: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ============================================
+           BASE STYLES
+           ============================================ */
+        body {
+            font-family: var(--font);
+            background: var(--gradient-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .header {
+            text-align: center;
+            padding: 40px 0 10px;
+        }
+
+        .header-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(108, 99, 255, 0.3);
+        }
+
+        .header-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           STEPPER
+           ============================================ */
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 30px 0 35px;
+            padding: 0 10px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: var(--transition);
+            border: 2px solid var(--border-card);
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .step-circle svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+            display: none;
+        }
+
+        .step-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .step-line {
+            width: 30px;
+            height: 2px;
+            background: var(--border-card);
+            margin: 0 6px;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        /* Step states */
+        .step-item.active .step-circle {
+            background: var(--gradient-primary);
+            border-color: var(--accent-primary);
+            color: white;
+            box-shadow: 0 0 16px rgba(108, 99, 255, 0.4);
+        }
+        .step-item.active .step-label { color: var(--text-primary); }
+
+        .step-item.completed .step-circle {
+            background: var(--gradient-success);
+            border-color: var(--accent-success);
+            color: white;
+            box-shadow: 0 0 12px rgba(0, 212, 170, 0.3);
+        }
+        .step-item.completed .step-circle span { display: none; }
+        .step-item.completed .step-circle svg { display: block; }
+        .step-item.completed .step-label { color: var(--accent-success); }
+
+        .step-line.completed { background: var(--accent-success); }
+        .step-line.active { background: var(--accent-primary); }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--glass-shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .card-header-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-header-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+
+        .card-header-icon.blue { background: var(--gradient-primary); }
+        .card-header-icon.orange { background: linear-gradient(135deg, #ff9a56 0%, #ff6b35 100%); }
+        .card-header-icon.purple { background: var(--gradient-purple); }
+        .card-header-icon.green { background: var(--gradient-success); }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .card-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* ============================================
+           FORM ELEMENTS
+           ============================================ */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-family: var(--font);
+            color: var(--text-primary);
+            transition: var(--transition);
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        input[type="text"].valid {
+            border-color: var(--accent-success);
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+        }
+
+        input[type="text"].invalid {
+            border-color: var(--accent-danger);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+            padding: 11px 16px;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: var(--transition);
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            opacity: 0.9;
+        }
+
+        .input-validation {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.1rem;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .input-validation.show { opacity: 1; }
+
+        .hint {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .hint strong { color: var(--accent-warning); font-weight: 600; }
+
+        .flex-row {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .flex-row input { flex: 1; }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: var(--font);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .btn:hover::before { opacity: 1; }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+        }
+
+        .btn-primary:hover { box-shadow: 0 6px 25px rgba(108, 99, 255, 0.4); transform: translateY(-1px); }
+
+        .btn-purple {
+            background: var(--gradient-purple);
+            color: white;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-purple:hover { box-shadow: 0 6px 25px rgba(168, 85, 247, 0.4); transform: translateY(-1px); }
+
+        .btn-success {
+            background: var(--gradient-success);
+            color: #0a3d2e;
+            padding: 13px 18px;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+
+        .btn-success:hover { box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3); }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-card);
+            color: var(--text-primary);
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        .btn .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============================================
+           TOAST NOTIFICATIONS
+           ============================================ */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 380px;
+        }
+
+        .toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-card);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toast:hover { transform: translateX(-4px); }
+
+        .toast.removing {
+            animation: toastOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .toast-success { background: rgba(0, 212, 170, 0.15); border-color: rgba(0, 212, 170, 0.3); }
+        .toast-error { background: rgba(255, 107, 107, 0.15); border-color: rgba(255, 107, 107, 0.3); }
+        .toast-info { background: rgba(79, 195, 247, 0.15); border-color: rgba(79, 195, 247, 0.3); }
+        .toast-warning { background: rgba(255, 179, 71, 0.15); border-color: rgba(255, 179, 71, 0.3); }
+
+        .toast-icon {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* ============================================
+           DROP ZONE
+           ============================================ */
+        .drop-zone {
+            border: 2px dashed var(--border-card);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            margin-top: 8px;
+        }
+        .drop-zone.dragover {
+            background: rgba(108, 99, 255, 0.1);
+            border-color: var(--accent-primary);
+        }
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .drop-zone-content {
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .drop-zone-content svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--text-muted);
+            transition: var(--transition);
+        }
+        .drop-zone.dragover .drop-zone-content svg {
+            fill: var(--accent-primary);
+        }
+        .drop-zone-text {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .drop-zone-text strong {
+            color: var(--accent-primary);
+        }
+        .file-selected {
+            color: var(--accent-success) !important;
+            font-weight: bold;
+        }
+
+        .toast-success .toast-icon { fill: var(--accent-success); }
+        .toast-error .toast-icon { fill: var(--accent-danger); }
+        .toast-info .toast-icon { fill: var(--accent-info); }
+        .toast-warning .toast-icon { fill: var(--accent-warning); }
+
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 2px; }
+        .toast-message { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(60px) scale(0.95); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0) scale(1); }
+            to { opacity: 0; transform: translateX(60px) scale(0.9); }
+        }
+
+        /* ============================================
+           DOWNLOAD FEEDBACK
+           ============================================ */
+        .download-feedback {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .download-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-card);
+            font-size: 0.85rem;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .download-item.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .download-item.success {
+            background: rgba(0, 212, 170, 0.08);
+            border-color: rgba(0, 212, 170, 0.2);
+        }
+
+        .download-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .download-item.success svg { fill: var(--accent-success); }
+        .download-item .filename { font-weight: 600; color: var(--text-heading); }
+
+        /* ============================================
+           ACCORDION (ARCA Instructions)
+           ============================================ */
+        .accordion {
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+            border: none;
+            width: 100%;
+            font-family: var(--font);
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .accordion-header:hover { background: rgba(255, 255, 255, 0.06); }
+
+        .accordion-arrow {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+            transition: transform 0.3s ease;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .accordion.open .accordion-arrow { transform: rotate(180deg); }
+
+        .accordion-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .tag-required { background: rgba(255, 107, 107, 0.15); color: var(--accent-danger); }
+        .tag-important { background: rgba(255, 179, 71, 0.15); color: var(--accent-warning); }
+        .tag-help { background: rgba(79, 195, 247, 0.15); color: var(--accent-info); }
+
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .accordion.open .accordion-body {
+            max-height: 800px;
+        }
+
+        .accordion-content {
+            padding: 0 18px 16px;
+        }
+
+        .accordion-content ol {
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+
+        .accordion-content li {
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .accordion-content li b { color: var(--text-primary); }
+
+        .accordion-content .tip-box {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .tip-box.info { background: rgba(79, 195, 247, 0.08); border: 1px solid rgba(79, 195, 247, 0.15); color: var(--accent-info); }
+        .tip-box.warning { background: rgba(255, 179, 71, 0.08); border: 1px solid rgba(255, 179, 71, 0.15); color: var(--accent-warning); }
+        .tip-box.danger { background: rgba(255, 107, 107, 0.08); border: 1px solid rgba(255, 107, 107, 0.15); color: var(--accent-danger); }
+
+        /* ============================================
+           ARCA LINK BUTTON
+           ============================================ */
+        .arca-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            margin-bottom: 18px;
+            box-shadow: 0 4px 15px rgba(0, 86, 179, 0.3);
+        }
+
+        .arca-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 86, 179, 0.4);
+        }
+
+        .arca-link svg { width: 18px; height: 18px; fill: white; }
+
+        /* ============================================
+           SUCCESS CARD (Paso Final)
+           ============================================ */
+        .card-success {
+            background: rgba(0, 212, 170, 0.06);
+            border-color: rgba(0, 212, 170, 0.15);
+        }
+
+        .email-list {
+            list-style: none;
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 8px;
+        }
+
+        .email-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-card);
+            transition: var(--transition);
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .email-item:hover {
+            background: rgba(108, 99, 255, 0.1);
+            border-color: rgba(108, 99, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .email-item svg { width: 16px; height: 16px; fill: var(--accent-primary); flex-shrink: 0; }
+
+        /* ============================================
+           WARNING BOX
+           ============================================ */
+        .warning-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 179, 71, 0.06);
+            border: 1px solid rgba(255, 179, 71, 0.15);
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: var(--accent-warning);
+            line-height: 1.5;
+        }
+
+        .warning-box svg { width: 20px; height: 20px; fill: var(--accent-warning); flex-shrink: 0; margin-top: 1px; }
+
+        .info-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(108, 99, 255, 0.06);
+            border: 1px solid rgba(108, 99, 255, 0.15);
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: var(--accent-info);
+            line-height: 1.5;
+        }
+
+        .info-box svg { width: 20px; height: 20px; fill: var(--accent-info); flex-shrink: 0; margin-top: 1px; }
+
+        /* ============================================
+           HIDDEN SECTIONS (toggle by step)
+           ============================================ */
+        .step-section {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .step-section.collapsed {
+            display: none;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            padding: 30px 0 10px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           PRINT STYLES
+           ============================================ */
+        #print-area { display: none; }
+
+        @media print {
+            body { background: white !important; color: #333 !important; }
+            body > *:not(#print-area) { display: none !important; }
+            #print-area {
+                display: block !important;
+                background: white;
+                padding: 30px;
+                margin: 0;
+                color: #333;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            .print-header { border-bottom: 3px solid #0056b3; padding-bottom: 12px; margin-bottom: 24px; }
+            .print-header h2 { color: #0056b3; margin-bottom: 6px; }
+            .print-section { margin-bottom: 20px; border: 1px solid #ddd; padding: 18px; border-radius: 8px; }
+            .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            .data-table td { padding: 10px; border: 1px solid #ddd; }
+            .data-table td.label { font-weight: bold; width: 30%; background: #f5f5f5; }
+            .print-section h4 { margin-top: 14px; margin-bottom: 6px; color: #333; }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 640px) {
+            .container { padding: 12px 12px 40px; }
+            .header { padding: 24px 0 8px; }
+            .header h1 { font-size: 1.35rem; }
+            .card { padding: 20px 16px; }
+
+            .stepper { gap: 0; flex-wrap: nowrap; overflow-x: auto; padding: 0 4px; }
+            .step-label { font-size: 0.68rem; }
+            .step-circle { width: 30px; height: 30px; font-size: 0.75rem; }
+            .step-line { width: 16px; }
+
+            .flex-row { flex-direction: column; }
+            .btn-success { width: 100%; }
+            .email-list { grid-template-columns: 1fr; }
+
+            .toast-container { left: 12px; right: 12px; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+            </div>
+            <h1>Gestor de Certificados ARCA</h1>
+            <p>Generá tus archivos de facturación electrónica de forma segura</p>
+        </header>
+
+        <!-- STEPPER -->
+        <nav class="stepper" id="stepper" aria-label="Progreso del proceso">
+            <div class="step-item active" data-step="1">
+                <div class="step-circle">
+                    <span>1</span>
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <span class="step-label">Generar CSR</span>
+            </div>
+            <div class="step-line" data-line="1"></div>
+            <div class="step-item" data-step="2">
+                <div class="step-circle">
+                    <span>2</span>
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <span class="step-label">Portal ARCA</span>
+            </div>
+            <div class="step-line" data-line="2"></div>
+            <div class="step-item" data-step="3">
+                <div class="step-circle">
+                    <span>3</span>
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <span class="step-label">Generar PFX</span>
+            </div>
+            <div class="step-line" data-line="3"></div>
+            <div class="step-item" data-step="4">
+                <div class="step-circle">
+                    <span>4</span>
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <span class="step-label">Enviar</span>
+            </div>
+        </nav>
+
+        <!-- ==========================================
+             PASO 1: GENERAR CSR/KEY
+             ========================================== -->
+        <section class="card step-section" id="section-step1">
+            <div class="card-header">
+                <div class="card-header-icon blue">
+                    <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                </div>
+                <div>
+                    <div class="card-title">Paso 1: Generar Solicitud y Llave Privada</div>
+                    <div class="card-subtitle">Creá los archivos .CSR y .KEY necesarios para ARCA</div>
+                </div>
+            </div>
+
+            <form id="form-csr" autocomplete="off">
+                <div class="form-group">
+                    <label for="cuit">CUIT del Contribuyente</label>
+                    <div class="flex-row">
+                        <div class="input-wrapper" style="flex:1;">
+                            <input type="text" id="cuit" name="cuit_field_x" placeholder="Solo números, 11 dígitos (ej: 20345678901)" required inputmode="numeric" maxlength="11" autocomplete="new-password">
+                            <span class="input-validation" id="cuit-validation"></span>
+                        </div>
+                        <button type="button" id="btn-copiar-cuit" class="btn btn-success">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                            Copiar
+                        </button>
+                    </div>
+                    <span class="hint">Copiá tu CUIT para poder pegarlo al iniciar sesión en ARCA.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="empresa">Razón Social</label>
+                    <input type="text" id="empresa" name="empresa_field_x" placeholder="Nombre de la empresa o persona" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label for="alias">Alias (Identificador para ARCA)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="alias" name="alias_field_x" placeholder="Ej: SistemaVentas2026" required autocomplete="new-password">
+                        <span class="input-validation" id="alias-validation"></span>
+                    </div>
+                    <span class="hint">Nombre corto, <strong>sin espacios ni símbolos</strong> (solo letras y números).</span>
+                </div>
+
+                <button type="submit" id="btn-generar" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                    Generar Archivos (.CSR y .KEY)
+                </button>
+
+                <div class="download-feedback" id="download-feedback-csr"></div>
+
+                <div class="warning-box">
+                    <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    <span><strong>Importante:</strong> Guardá bien el archivo <strong>.key</strong> que se descarga — lo vas a necesitar en el Paso 3.</span>
+                </div>
+            </form>
+
+            <button type="button" id="btn-completar-paso1" class="btn btn-secondary" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                Ya descargué los archivos — Continuar al Paso 2
+            </button>
+
+            <button type="button" id="btn-imprimir" class="btn btn-secondary" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                Imprimir Instructivo para el Cliente
+            </button>
+        </section>
+
+        <!-- ==========================================
+             PASO 2: INSTRUCCIONES ARCA
+             ========================================== -->
+        <section class="card step-section collapsed" id="section-step2">
+            <div class="card-header">
+                <div class="card-header-icon orange">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div>
+                    <div class="card-title">Paso 2: Gestiones en el Portal de ARCA</div>
+                    <div class="card-subtitle">Seguí estas instrucciones dentro de la web de ARCA</div>
+                </div>
+            </div>
+
+            <a href="https://auth.afip.gob.ar/contribuyente_/login.xhtml" target="_blank" rel="noopener noreferrer" class="arca-link">
+                <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                Abrir Portal ARCA (nueva pestaña)
+            </a>
+
+            <div class="info-box" style="margin-top:0; margin-bottom:16px;">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                <span><strong>Recomendación:</strong> Usá <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong> para acceder a ARCA. Firefox puede presentar problemas con algunos formularios del portal.</span>
+            </div>
+
+            <!-- Accordion: A. Generar Certificado -->
+            <div class="accordion open" id="acc-generar">
+                <button type="button" class="accordion-header" onclick="toggleAccordion('acc-generar')">
+                    <span class="accordion-tag tag-required">Obligatorio</span>
+                    A. Generar el Certificado en ARCA
+                    <svg class="accordion-arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        <ol>
+                            <li>Iniciá sesión con tu CUIT y clave fiscal.</li>
+                            <li>En el buscador de servicios, buscá <b>"Administración de Certificados Digitales"</b>.
+                                <div class="tip-box info" style="margin-top:6px;">💡 Si no aparece en tu panel, hacé clic en <b>"Administrador de Relaciones de Clave Fiscal"</b> → <b>"Habilitar servicio"</b> → buscá <b>ARCA</b> → <b>Administración de Certificados Digitales</b> y habilitalo.</div>
+                            </li>
+                            <li>Hacé clic en <b>"Agregar alias"</b>. Si ya tenés un alias previo, hacé clic en <b>"Ver"</b> sobre ese alias y luego en <b>"Agregar certificado"</b>.</li>
+                            <li>Subí el archivo <b>.csr</b> que generaste en el Paso 1.</li>
+                            <li>Descargá el certificado <b>.crt</b> que te genera el portal — <b>lo vas a necesitar en el Paso 3</b>.</li>
+                        </ol>
+                        <div class="tip-box warning">⚠️ <strong>Si ARCA rechaza el .csr:</strong> Verificá que no se haya dañado al reenviarlo por WhatsApp o email. Descargalo directamente del lugar donde lo guardaste.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion: B. Asociar WebService -->
+            <div class="accordion open" id="acc-webservice">
+                <button type="button" class="accordion-header" onclick="toggleAccordion('acc-webservice')">
+                    <span class="accordion-tag tag-required">Obligatorio</span>
+                    B. Asociar el WebService de Facturación
+                    <svg class="accordion-arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        <ol>
+                            <li>Volvé al inicio de ARCA y entrá a <b>"Administrador de Relaciones de Clave Fiscal"</b>.</li>
+                            <li>Hacé clic en <b>"Nueva Relación"</b> y luego en el botón <b>"Buscar"</b>.</li>
+                            <li>Seleccioná <b>AFIP</b> → <b>WebServices</b> → <b>Facturación Electrónica</b>.</li>
+                            <li>En el apartado Representante, hacé clic en <b>"Buscar"</b>, seleccioná el <b>Alias</b> que creaste y dale a <b>"Confirmar"</b>.</li>
+                            <li>El sistema emitirá el comprobante <b>F. 3283/E</b>.<br><em>(Solo es un comprobante visual de éxito — no hace falta enviarlo a nadie).</em></li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion: Errores comunes -->
+            <div class="accordion" id="acc-errores">
+                <button type="button" class="accordion-header" onclick="toggleAccordion('acc-errores')">
+                    <span class="accordion-tag tag-help">Ayuda</span>
+                    Errores comunes y soluciones
+                    <svg class="accordion-arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                </button>
+                <div class="accordion-body">
+                    <div class="accordion-content">
+                        <ol>
+                            <li><b>"No puedo encontrar Administración de Certificados Digitales"</b> → Habilitá el servicio desde el Administrador de Relaciones de Clave Fiscal (ver sección A, punto 2).</li>
+                            <li><b>"El portal me pide actualizar la clave fiscal"</b> → ARCA requiere clave fiscal Nivel 3 o superior para certificados digitales. Actualizá tu clave en una dependencia de ARCA o por la app Mi AFIP.</li>
+                            <li><b>"El archivo .csr no se sube"</b> → Verificá que usás Chrome o Edge. Intentá subir el archivo arrastrándolo al campo. Si fue enviado por WhatsApp, puede haberse corrompido — descargalo de donde lo guardaste originalmente.</li>
+                            <li><b>"Me aparece un error de relación ya existente"</b> → Si ya tenías una relación previa de Facturación Electrónica, debés primero dar de baja la anterior y luego crear la nueva con el alias actual.</li>
+                            <li><b>"No me genera el F. 3283/E"</b> → Esto puede ocurrir si el alias no se vinculó correctamente. Repetí el proceso de la sección B desde el inicio.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="btn-completar-paso2" class="btn btn-primary" style="margin-top:14px;">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                Ya completé los pasos en ARCA — Continuar
+            </button>
+        </section>
+
+        <!-- ==========================================
+             PASO 3: GENERAR PFX
+             ========================================== -->
+        <section class="card step-section collapsed" id="section-step3">
+            <div class="card-header">
+                <div class="card-header-icon purple">
+                    <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10zM8 13.01l1.41 1.41L11 12.84V17h2v-4.16l1.59 1.59L16 13.01 12.01 9 8 13.01z"/></svg>
+                </div>
+                <div>
+                    <div class="card-title">Paso 3: Generar Certificado Final (.PFX)</div>
+                    <div class="card-subtitle">Combiná el .CRT de ARCA con tu .KEY para crear el PFX</div>
+                </div>
+            </div>
+
+            <form id="form-pfx" autocomplete="off">
+                <div class="form-group">
+                    <label>1. Subir Certificado (.CRT) descargado de ARCA</label>
+                    <div class="drop-zone" id="drop-zone-crt">
+                        <input type="file" id="file-crt" accept=".crt,.cer,.pem" required>
+                        <div class="drop-zone-content">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            <span class="drop-zone-text" id="text-crt">Arrastrá el archivo <b>.crt</b> o hacé clic acá</span>
+                        </div>
+                    </div>
+                    <span class="hint" style="margin-top: 4px; display: block;">Es el archivo que descargaste del portal en el paso anterior.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>2. Subir Llave Privada (.KEY) del Paso 1</label>
+                    <div class="drop-zone" id="drop-zone-key">
+                        <input type="file" id="file-key" accept=".key,.pem" required>
+                        <div class="drop-zone-content">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            <span class="drop-zone-text" id="text-key">Arrastrá el archivo <b>.key</b> o hacé clic acá</span>
+                        </div>
+                    </div>
+                    <span class="hint" style="margin-top: 4px; display: block;">Es el archivo .key que se generó junto con el .csr al inicio.</span>
+                </div>
+
+                <div class="info-box" style="margin-top:0; margin-bottom:18px;">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <span>El certificado se generará <strong>sin contraseña</strong>, como lo requiere el sistema de facturación.</span>
+                </div>
+
+                <button type="submit" id="btn-pfx" class="btn btn-purple">
+                    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                    Generar Certificado .PFX
+                </button>
+            </form>
+        </section>
+
+        <!-- ==========================================
+             PASO 4: ENVIAR
+             ========================================== -->
+        <section class="card card-success step-section collapsed" id="section-step4">
+            <div class="card-header">
+                <div class="card-header-icon green">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                </div>
+                <div>
+                    <div class="card-title">Paso Final: Enviar a tu Agente</div>
+                    <div class="card-subtitle">Enviá el archivo .PFX a tu agente de cuenta en Grupo Oleum</div>
+                </div>
+            </div>
+
+            <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
+                Adjuntá tu archivo <strong style="color: var(--accent-success);">.pfx</strong> en un correo electrónico a tu agente para que lo instale en el sistema de facturación. Hacé clic en el mail de tu agente:
+            </p>
+
+            <ul class="email-list">
+                <li><a href="mailto:german.pratto@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    german.pratto@grupooleum.com.ar
+                </a></li>
+                <li><a href="mailto:ramiro.dicarlo@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    ramiro.dicarlo@grupooleum.com.ar
+                </a></li>
+                <li><a href="mailto:nicolas.chamut@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    nicolas.chamut@grupooleum.com.ar
+                </a></li>
+                <li><a href="mailto:julio.herrera@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    julio.herrera@grupooleum.com.ar
+                </a></li>
+                <li><a href="mailto:jonas.nisnievich@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    jonas.nisnievich@grupooleum.com.ar
+                </a></li>
+                <li><a href="mailto:miguel.agustini@grupooleum.com.ar" class="email-item">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    miguel.agustini@grupooleum.com.ar
+                </a></li>
+            </ul>
+
+            <div class="warning-box" style="margin-top: 18px;">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                <span><strong>¡No pierdas tu archivo .key!</strong> Guardalo en un lugar seguro. Si lo perdés, deberás repetir todo el proceso desde el Paso 1.</span>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <p>Gestor de Certificados © 2026 — Grupo Oleum</p>
+            <p style="margin-top:4px;">Todos los archivos se generan localmente en tu navegador. No se envía ningún dato a servidores externos.</p>
+        </footer>
+    </div>
+
+    <!-- ==========================================
+         PRINT AREA (hidden on screen)
+         ========================================== -->
+    <div id="print-area">
+        <div class="print-header">
+            <h2>Instructivo Completo — Certificado Digital ARCA para Facturación Electrónica</h2>
+            <p>Fecha de generación: <span id="print-fecha"></span> | Documento generado por Grupo Oleum</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">📋 Datos del Contribuyente</h3>
+            <table class="data-table">
+                <tr><td class="label">CUIT:</td><td id="res-cuit"></td></tr>
+                <tr><td class="label">Razón Social:</td><td id="res-empresa"></td></tr>
+                <tr><td class="label">Alias para ARCA:</td><td id="res-alias"></td></tr>
+                <tr><td class="label">Contraseña del PFX:</td><td>Sin contraseña (requerido por el sistema de facturación)</td></tr>
+                <tr><td class="label">Archivos generados:</td><td>.csr (solicitud) y .key (llave privada)</td></tr>
+            </table>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">⚠️ ANTES DE EMPEZAR — Lea esto primero</h3>
+            <ul style="line-height:1.8; padding-left:20px;">
+                <li><b>Navegador recomendado:</b> Use <b>Google Chrome</b> o <b>Microsoft Edge</b> (versión actualizada). Firefox puede presentar errores al subir archivos o al confirmar relaciones en ARCA.</li>
+                <li><b>Clave Fiscal:</b> Necesita tener <b>Clave Fiscal Nivel 3 o superior</b>. Si tiene Nivel 2, no podrá administrar certificados digitales. Para actualizarla: vaya a una dependencia de ARCA con su DNI, o use la app <b>Mi AFIP</b> con reconocimiento facial.</li>
+                <li><b>No reenvíe archivos por WhatsApp:</b> WhatsApp comprime y puede corromper los archivos .csr y .key. Use siempre email o copie los archivos directamente por pendrive/carpeta compartida.</li>
+                <li><b>Guarde el archivo .key:</b> Este archivo es su llave privada y lo necesitará al final del proceso. Guárdelo en una carpeta segura de su computadora. Si lo pierde, deberá repetir todo el proceso desde cero.</li>
+            </ul>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 1 — Ingresar al portal de ARCA</h3>
+            <p style="margin-top:5px;">1. Abra su navegador (Chrome o Edge) e ingrese a: <b>https://auth.afip.gob.ar/contribuyente_/login.xhtml</b></p>
+            <p>2. Ingrese su <b>CUIT/CUIL</b> (el que figura arriba) y presione <b>"Siguiente"</b>.</p>
+            <p>3. Ingrese su <b>Clave Fiscal</b> y presione <b>"Ingresar"</b>.</p>
+            <p>4. Si el sistema le solicita verificación en dos pasos (código por SMS o app), complételo normalmente.</p>
+            <p style="margin-top:10px; padding:8px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px;"><b>⚠️ ¿No puede ingresar?</b> Si olvidó su clave fiscal, puede blanquearla desde la app Mi AFIP (con reconocimiento facial) o acercándose a una dependencia de ARCA con su DNI.</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 2 — Buscar el servicio "Administración de Certificados Digitales"</h3>
+            <p style="margin-top:5px;">Una vez dentro del portal, tiene dos opciones para encontrar el servicio:</p>
+            
+            <h4>Opción A — Si el servicio ya está en su panel:</h4>
+            <p>1. En la pantalla principal de ARCA, busque el recuadro que dice <b>"Administración de Certificados Digitales"</b>.</p>
+            <p>2. Haga clic en él para ingresar. Continúe al PASO 3.</p>
+            
+            <h4>Opción B — Si NO ve el servicio en su panel (primera vez):</h4>
+            <p>1. En la barra de búsqueda de servicios (parte superior de la pantalla), escriba <b>"certificados"</b> y presione Enter.</p>
+            <p>2. Si aparece <b>"Administración de Certificados Digitales"</b>, haga clic para ingresar.</p>
+            <p>3. Si NO aparece, debe habilitarlo:</p>
+            <p style="padding-left:20px;">a. Vaya a <b>"Administrador de Relaciones de Clave Fiscal"</b> (búsquelo en el panel o en la barra de búsqueda).<br>
+               b. Haga clic en <b>"Adherir servicio"</b> o <b>"Habilitar servicio"</b>.<br>
+               c. Busque <b>ARCA</b> → <b>Administración de Certificados Digitales</b>.<br>
+               d. Confirme la adhesión. El servicio debería aparecer ahora en su panel principal.</p>
+            
+            <p style="margin-top:10px; padding:8px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px;"><b>⚠️ ¿No lo encuentra de ninguna forma?</b> Es posible que su tipo de contribuyente no tenga habilitada esta opción. Contacte a ARCA al 0810-999-2347 o consulte con su contador.</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 3 — Subir el archivo .CSR y descargar el .CRT</h3>
+            <p style="margin-top:5px;">Ya dentro de <b>"Administración de Certificados Digitales"</b>:</p>
+            
+            <h4>Si es la PRIMERA VEZ (no tiene ningún alias creado):</h4>
+            <p>1. Haga clic en <b>"Agregar alias"</b>.</p>
+            <p>2. En el campo de alias, escriba exactamente: <b><span style="color:#0056b3;">[ver alias en la tabla de arriba]</span></b></p>
+            <p>3. Haga clic en <b>"Elegir archivo"</b> o <b>"Seleccionar archivo"</b> y busque en su computadora el archivo con extensión <b>.csr</b> que se descargó anteriormente.</p>
+            <p>4. Presione <b>"Agregar alias"</b> o <b>"Confirmar"</b>.</p>
+            <p>5. El sistema generará un certificado. Haga clic en <b>"Descargar"</b> para obtener el archivo <b>.crt</b> (guárdelo, lo necesitará luego).</p>
+            
+            <h4>Si ya tiene un alias y está RENOVANDO un certificado vencido:</h4>
+            <p>1. Busque su alias existente en la lista y haga clic en <b>"Ver"</b>.</p>
+            <p>2. Haga clic en <b>"Agregar certificado"</b> (dentro del alias existente).</p>
+            <p>3. Suba el nuevo archivo <b>.csr</b> generado.</p>
+            <p>4. Descargue el nuevo <b>.crt</b>.</p>
+            <p><i>Nota: El alias se mantiene, solo cambia el certificado asociado.</i></p>
+            
+            <p style="margin-top:10px; padding:8px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px;"><b>❌ ¿ARCA rechaza el archivo .csr?</b><br>
+            • Verifique que el archivo tiene extensión .csr (no .csr.txt ni otro formato).<br>
+            • No lo abra con el Bloc de Notas ni lo modifique.<br>
+            • Si lo recibió por WhatsApp, puede estar corrupto — pídale a quien se lo envió que se lo mande por email como archivo adjunto.<br>
+            • Intente arrastrar el archivo al campo de subida en vez de usar el botón "Examinar".<br>
+            • Pruebe con otro navegador (Chrome ↔ Edge).</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 4 — Asociar el WebService de Facturación Electrónica (¡OBLIGATORIO!)</h3>
+            <p style="margin-top:5px; padding:8px; background:#d4edda; border:1px solid #c3e6cb; border-radius:4px;"><b>✅ Este paso es OBLIGATORIO.</b> Sin esto, el certificado no podrá usarse para facturar. No lo saltee.</p>
+            
+            <p style="margin-top:10px;">1. Vuelva a la pantalla principal de ARCA (haga clic en el logo de ARCA arriba a la izquierda).</p>
+            <p>2. Busque e ingrese a <b>"Administrador de Relaciones de Clave Fiscal"</b>.</p>
+            <p>3. Haga clic en el botón <b>"Nueva Relación"</b>.</p>
+            <p>4. En la pantalla que aparece, haga clic en <b>"Buscar"</b> (botón con lupa o texto "Buscar").</p>
+            <p>5. Se abrirá un árbol de opciones. Navegue así:</p>
+            <p style="padding-left:20px; font-size:0.95em;">
+               <b>AFIP</b> → clic en el <b>"+"</b> o la flecha para expandir<br>
+               → <b>WebServices</b> → clic en <b>"+"</b><br>
+               → <b>Facturación Electrónica</b> → selecciónelo haciendo clic en el nombre
+            </p>
+            <p>6. En el apartado <b>"Representante"</b>, haga clic en <b>"Buscar"</b>.</p>
+            <p>7. Aparecerá una lista con los alias disponibles. Seleccione el alias que creó (el que figura en la tabla de arriba).</p>
+            <p>8. Haga clic en <b>"Confirmar"</b>.</p>
+            <p>9. El sistema debería generar el comprobante <b>F. 3283/E</b>.</p>
+            <p style="padding-left:20px;"><i>Este formulario es solo un comprobante visual de que la relación se creó correctamente. No hace falta imprimirlo ni enviarlo a nadie.</i></p>
+            
+            <p style="margin-top:10px; padding:8px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px;"><b>⚠️ Problemas comunes en este paso:</b><br>
+            • <b>"Ya existe una relación":</b> Si ya tenía una relación previa de Facturación Electrónica con un alias viejo, primero debe darla de baja (selecciónela y haga clic en "Dar de baja") y luego crear la nueva con el alias actual.<br>
+            • <b>"No aparece el alias en la lista de representantes":</b> Verifique que completó correctamente el PASO 3 (subir el .csr). A veces ARCA tarda unos minutos en registrar el alias — espere 5 minutos y vuelva a intentar.<br>
+            • <b>"No me genera el F. 3283/E":</b> Puede ocurrir si el alias no se vinculó correctamente. Repita el proceso desde el punto 3 de este paso.<br>
+            • <b>"Me pide nivel de clave fiscal mayor":</b> Necesita Clave Fiscal Nivel 3 mínimo.</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 5 — Generar el archivo .PFX (en la web del Generador)</h3>
+            <p style="margin-top:5px;">1. Vuelva a la página web del Generador de Certificados (la misma donde generó el .csr).</p>
+            <p>2. Avance al <b>Paso 3</b> de la web ("Generar Certificado Final .PFX").</p>
+            <p>3. Suba el archivo <b>.crt</b> que descargó de ARCA en el PASO 3 de este instructivo.</p>
+            <p>4. Suba el archivo <b>.key</b> que guardó al principio de todo el proceso.</p>
+            <p>5. Haga clic en <b>"Generar Certificado .PFX"</b>.</p>
+            <p>6. Se descargará un archivo con extensión <b>.pfx</b>. Este es su certificado final.</p>
+            
+            <p style="margin-top:10px; padding:8px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px;"><b>❌ ¿Error al generar el PFX?</b><br>
+            • Verifique que el .crt sea el que descargó de ARCA (no un archivo viejo de otra vez).<br>
+            • Verifique que el .key sea el que se generó junto con el .csr (son del mismo par).<br>
+            • Si mezcla un .crt de un par con un .key de otro par, no funcionará.<br>
+            • Si perdió el .key, deberá repetir todo desde el PASO 1 (generar nuevos .csr y .key).</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">PASO 6 — Enviar el .PFX a su Agente de Cuenta</h3>
+            <p style="margin-top:5px;">1. Envíe el archivo <b>.pfx</b> como <b>archivo adjunto por correo electrónico</b> a su agente de cuenta en <b>Grupo Oleum</b>.</p>
+            <p>2. Contactos disponibles:</p>
+            <ul style="line-height:2; padding-left:20px;">
+                <li>german.pratto@grupooleum.com.ar</li>
+                <li>ramiro.dicarlo@grupooleum.com.ar</li>
+                <li>nicolas.chamut@grupooleum.com.ar</li>
+                <li>julio.herrera@grupooleum.com.ar</li>
+                <li>jonas.nisnievich@grupooleum.com.ar</li>
+                <li>miguel.agustini@grupooleum.com.ar</li>
+            </ul>
+            <p>3. Su agente instalará el certificado en el sistema de facturación. Una vez instalado, podrá emitir facturas electrónicas.</p>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">📌 Resumen de archivos y para qué sirve cada uno</h3>
+            <table class="data-table">
+                <tr><td class="label" style="width:15%;">Archivo</td><td class="label" style="width:35%;">¿Qué es?</td><td class="label">¿Qué hacer con él?</td></tr>
+                <tr><td><b>.csr</b></td><td>Solicitud de certificado</td><td>Se sube al portal de ARCA (PASO 3). Después de usarlo no lo necesita más.</td></tr>
+                <tr><td><b>.key</b></td><td>Llave privada (secreta)</td><td>Se usa para generar el .pfx (PASO 5). Guardar en lugar seguro. NO compartir.</td></tr>
+                <tr><td><b>.crt</b></td><td>Certificado emitido por ARCA</td><td>Se descarga de ARCA y se usa para generar el .pfx (PASO 5).</td></tr>
+                <tr><td><b>.pfx</b></td><td>Certificado final para facturar</td><td>Se envía al agente de Grupo Oleum (PASO 6) para instalar en el sistema.</td></tr>
+            </table>
+        </div>
+
+        <div class="print-section">
+            <h3 style="margin-top:0">🆘 Preguntas Frecuentes</h3>
+            <p><b>¿Cada cuánto se renueva el certificado?</b><br>
+            Los certificados de ARCA vencen. Cuando venza, recibirá un aviso y deberá repetir este proceso (generar nuevo .csr, subirlo a ARCA, generar nuevo .pfx).</p>
+            
+            <p><b>¿Puedo hacer esto desde el celular?</b><br>
+            No es recomendable. El portal de ARCA funciona mejor desde una computadora con Chrome o Edge. Desde el celular puede tener problemas para subir archivos.</p>
+            
+            <p><b>¿Qué pasa si genero un nuevo certificado? ¿Pierdo el anterior?</b><br>
+            No. Puede tener varios certificados activos. El anterior seguirá funcionando hasta que venza o lo dé de baja manualmente.</p>
+            
+            <p><b>¿Necesito hacer esto para cada empresa/CUIT?</b><br>
+            Sí. Cada CUIT necesita su propio certificado digital.</p>
+
+            <p><b>¿El archivo .pfx tiene contraseña?</b><br>
+            No. Se genera sin contraseña porque así lo requiere el sistema de facturación. Si algún programa le pide contraseña, deje el campo vacío.</p>
+        </div>
+
+        <p style="font-size: 0.8em; color: #888; margin-top: 20px;">Documento generado automáticamente por el Gestor de Certificados — Grupo Oleum © 2026.<br>En caso de dudas, contacte a su agente de cuenta.</p>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT
+         ========================================== -->
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        let currentStep = 1;
+        let generatedAlias = '';
+
+        // ============================================
+        // TOAST SYSTEM
+        // ============================================
+        function showToast(type, title, message, duration = 5000) {
+            const container = document.getElementById('toast-container');
+            const icons = {
+                success: '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+                error: '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>',
+                info: '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+                warning: '<svg class="toast-icon" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                ${icons[type]}
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+
+            toast.addEventListener('click', () => removeToast(toast));
+            container.appendChild(toast);
+
+            if (duration > 0) {
+                setTimeout(() => removeToast(toast), duration);
+            }
+        }
+
+        function removeToast(toast) {
+            if (toast.classList.contains('removing')) return;
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // ============================================
+        // STEPPER CONTROL
+        // ============================================
+        function updateStepper(step) {
+            currentStep = step;
+            document.querySelectorAll('.step-item').forEach(item => {
+                const s = parseInt(item.dataset.step);
+                item.classList.remove('active', 'completed');
+                if (s < step) item.classList.add('completed');
+                else if (s === step) item.classList.add('active');
+            });
+
+            document.querySelectorAll('.step-line').forEach(line => {
+                const l = parseInt(line.dataset.line);
+                line.classList.remove('completed', 'active');
+                if (l < step) line.classList.add('completed');
+                else if (l === step) line.classList.add('active');
+            });
+
+            // Show/hide sections
+            for (let i = 1; i <= 4; i++) {
+                const section = document.getElementById(`section-step${i}`);
+                if (section) {
+                    if (i === step) {
+                        section.classList.remove('collapsed');
+                        setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                    } else if (i > step) {
+                        section.classList.add('collapsed');
+                    }
+                    // Keep previous steps visible but don't scroll to them
+                }
+            }
+        }
+
+        // ============================================
+        // ACCORDION
+        // ============================================
+        function toggleAccordion(id) {
+            document.getElementById(id).classList.toggle('open');
+        }
+
+        // ============================================
+        // CUIT VALIDATION (Module 11)
+        // ============================================
+        function validarCUIT(cuit) {
+            cuit = cuit.toString().replace(/[^0-9]/g, '');
+            if (cuit.length !== 11) return false;
+
+            let acumulado = 0;
+            const digitos = cuit.split('');
+            const digitoVerificador = parseInt(digitos.pop());
+            
+            for (let i = 0; i < digitos.length; i++) {
+                acumulado += digitos[9 - i] * (2 + (i % 6));
+            }
+            
+            let verificadorCalculado = 11 - (acumulado % 11);
+            if (verificadorCalculado === 11) verificadorCalculado = 0;
+            if (verificadorCalculado === 10) verificadorCalculado = 9;
+            
+            return digitoVerificador === verificadorCalculado;
+        }
+
+        // ============================================
+        // REAL-TIME VALIDATION
+        // ============================================
+        const cuitInput = document.getElementById('cuit');
+        const cuitValidation = document.getElementById('cuit-validation');
+        const aliasInput = document.getElementById('alias');
+        const aliasValidation = document.getElementById('alias-validation');
+
+        // Filter CUIT to only digits
+        cuitInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length > 11) this.value = this.value.slice(0, 11);
+            
+            if (this.value.length === 11) {
+                if (validarCUIT(this.value)) {
+                    this.classList.add('valid');
+                    this.classList.remove('invalid');
+                    cuitValidation.textContent = '✓';
+                    cuitValidation.style.color = 'var(--accent-success)';
+                    cuitValidation.classList.add('show');
+                } else {
+                    this.classList.add('invalid');
+                    this.classList.remove('valid');
+                    cuitValidation.textContent = '✗';
+                    cuitValidation.style.color = 'var(--accent-danger)';
+                    cuitValidation.classList.add('show');
+                }
+            } else {
+                this.classList.remove('valid', 'invalid');
+                cuitValidation.classList.remove('show');
+            }
+        });
+
+        // Filter alias to alphanumeric only
+        aliasInput.addEventListener('input', function() {
+            const cleaned = this.value.replace(/[^a-zA-Z0-9]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+            }
+            
+            if (this.value.length > 0) {
+                this.classList.add('valid');
+                this.classList.remove('invalid');
+                aliasValidation.textContent = '✓';
+                aliasValidation.style.color = 'var(--accent-success)';
+                aliasValidation.classList.add('show');
+            } else {
+                this.classList.remove('valid', 'invalid');
+                aliasValidation.classList.remove('show');
+            }
+        });
+
+        // ============================================
+        // COPY CUIT
+        // ============================================
+        document.getElementById('btn-copiar-cuit').addEventListener('click', function() {
+            const val = cuitInput.value;
+            if (!val) {
+                showToast('warning', 'Sin CUIT', 'Escribí el CUIT primero para poder copiarlo.');
+                return;
+            }
+
+            // Try modern clipboard API, fallback to execCommand
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(val).then(() => onCopied(this)).catch(() => fallbackCopy(val, this));
+            } else {
+                fallbackCopy(val, this);
+            }
+        });
+
+        function fallbackCopy(text, btn) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                onCopied(btn);
+            } catch (e) {
+                showToast('info', 'Copiá manualmente', 'Seleccioná el CUIT y presioná Ctrl+C.');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function onCopied(btn) {
+            showToast('success', '¡CUIT Copiado!', 'Podés pegarlo al iniciar sesión en ARCA.');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg> ¡Copiado!';
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 2500);
+        }
+
+        // ============================================
+        // PRINT INSTRUCTIVO
+        // ============================================
+        document.getElementById('btn-imprimir').addEventListener('click', function() {
+            document.getElementById('print-fecha').innerText = new Date().toLocaleDateString('es-AR');
+            document.getElementById('res-cuit').innerText = cuitInput.value;
+            document.getElementById('res-empresa').innerText = document.getElementById('empresa').value;
+            document.getElementById('res-alias').innerText = aliasInput.value;
+            window.print();
+        });
+
+        // ============================================
+        // FILE DOWNLOAD UTILITY (Data URI - works from file://)
+        // ============================================
+        function descargar(filename, content) {
+            return new Promise((resolve) => {
+                // Use data URI which works reliably from file:// protocol
+                const base64 = btoa(unescape(encodeURIComponent(content)));
+                const dataUri = 'data:application/octet-stream;base64,' + base64;
+                const a = document.createElement('a');
+                a.href = dataUri;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    resolve();
+                }, 300);
+            });
+        }
+
+        function descargarBinario(filename, uint8Array) {
+            return new Promise((resolve) => {
+                // Convert binary data to base64 data URI
+                let binary = '';
+                for (let i = 0; i < uint8Array.length; i++) {
+                    binary += String.fromCharCode(uint8Array[i]);
+                }
+                const base64 = btoa(binary);
+                const dataUri = 'data:application/octet-stream;base64,' + base64;
+                const a = document.createElement('a');
+                a.href = dataUri;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    resolve();
+                }, 300);
+            });
+        }
+
+        function showDownloadItem(containerId, filename) {
+            const container = document.getElementById(containerId);
+            const item = document.createElement('div');
+            item.className = 'download-item';
+            item.innerHTML = `
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                <span class="filename">${filename}</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">descargado</span>
+            `;
+            container.appendChild(item);
+            // Trigger animation
+            requestAnimationFrame(() => {
+                item.classList.add('show', 'success');
+            });
+        }
+
+        // ============================================
+        // STEP 1: GENERATE CSR/KEY
+        // ============================================
+        document.getElementById('form-csr').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const cuitVal = cuitInput.value.replace(/[^0-9]/g, '');
+
+            if (!validarCUIT(cuitVal)) {
+                showToast('error', 'CUIT inválido', 'Revisá que esté bien escrito — son 11 números sin guiones.');
+                cuitInput.focus();
+                return;
+            }
+
+            const empresa = document.getElementById('empresa').value.trim();
+            const alias = aliasInput.value.trim();
+
+            if (!alias || !/^[a-zA-Z0-9]+$/.test(alias)) {
+                showToast('error', 'Alias inválido', 'El alias solo puede tener letras y números, sin espacios ni símbolos.');
+                aliasInput.focus();
+                return;
+            }
+
+            const btn = document.getElementById('btn-generar');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Generando llaves criptográficas...';
+
+            // Clear previous download feedback
+            document.getElementById('download-feedback-csr').innerHTML = '';
+
+            // Use setTimeout to let UI update before heavy crypto work
+            setTimeout(async () => {
+                try {
+                    const keys = forge.pki.rsa.generateKeyPair(2048);
+                    const csr = forge.pki.createCertificationRequest();
+                    csr.publicKey = keys.publicKey;
+                    csr.setSubject([
+                        { shortName: 'C', value: 'AR' },
+                        { shortName: 'O', value: empresa },
+                        { shortName: 'CN', value: alias },
+                        { type: '2.5.4.5', value: 'CUIT ' + cuitVal }
+                    ]);
+
+                    csr.sign(keys.privateKey, forge.md.sha256.create());
+                    const pemKey = forge.pki.privateKeyToPem(keys.privateKey);
+                    const pemCsr = forge.pki.certificationRequestToPem(csr);
+
+                    generatedAlias = alias;
+
+                    // Sequential downloads with visual feedback
+                    await descargar(alias + '.key', pemKey);
+                    showDownloadItem('download-feedback-csr', alias + '.key');
+
+                    // Wait 1.2s before second download to avoid browser blocking
+                    await new Promise(r => setTimeout(r, 1200));
+
+                    await descargar(alias + '.csr', pemCsr);
+                    showDownloadItem('download-feedback-csr', alias + '.csr');
+
+                    showToast('success', '¡Archivos generados!', `Se descargaron ${alias}.key y ${alias}.csr correctamente.`);
+
+                    // Show continuation buttons
+                    document.getElementById('btn-completar-paso1').style.display = 'flex';
+                    document.getElementById('btn-imprimir').style.display = 'flex';
+
+                } catch (err) {
+                    showToast('error', 'Error al generar', 'Hubo un problema al crear las llaves criptográficas. Intentá de nuevo.');
+                    console.error('CSR generation error:', err);
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg> Generar Archivos (.CSR y .KEY)';
+            }, 100);
+        });
+
+        // ============================================
+        // STEP TRANSITIONS
+        // ============================================
+        document.getElementById('btn-completar-paso1').addEventListener('click', () => {
+            updateStepper(2);
+        });
+
+        document.getElementById('btn-completar-paso2').addEventListener('click', () => {
+            updateStepper(3);
+        });
+
+        // ============================================
+        // STEP 3: GENERATE PFX
+        // ============================================
+        document.getElementById('form-pfx').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-pfx');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Generando certificado PFX...';
+
+            try {
+                const fileCrt = document.getElementById('file-crt').files[0];
+                const fileKey = document.getElementById('file-key').files[0];
+
+                if (!fileCrt || !fileKey) {
+                    showToast('error', 'Archivos faltantes', 'Seleccioná ambos archivos (.crt y .key) antes de continuar.');
+                    btn.disabled = false;
+                    btn.innerHTML = restorePfxButton();
+                    return;
+                }
+
+                const crtText = await fileCrt.text();
+                const keyText = await fileKey.text();
+
+                // Validate file contents
+                if (!crtText.includes('CERTIFICATE') && !crtText.includes('-----BEGIN')) {
+                    showToast('error', 'Archivo .CRT inválido', 'El archivo no parece ser un certificado válido. Asegurate de subir el .crt descargado de ARCA.');
+                    btn.disabled = false;
+                    btn.innerHTML = restorePfxButton();
+                    return;
+                }
+
+                if (!keyText.includes('PRIVATE KEY')) {
+                    showToast('error', 'Archivo .KEY inválido', 'El archivo no parece ser una llave privada válida. Asegurate de subir el .key generado en el Paso 1.');
+                    btn.disabled = false;
+                    btn.innerHTML = restorePfxButton();
+                    return;
+                }
+
+                const aliasForPfx = generatedAlias || aliasInput.value.trim() || 'certificado';
+
+                const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
+                    forge.pki.privateKeyFromPem(keyText),
+                    [forge.pki.certificateFromPem(crtText)],
+                    '', // Sin contraseña
+                    { generateLocalKeyId: true, friendlyName: aliasForPfx }
+                );
+
+                const p12Der = forge.asn1.toDer(p12Asn1).getBytes();
+                const buffer = new Uint8Array(p12Der.length);
+                for (let i = 0; i < p12Der.length; i++) buffer[i] = p12Der.charCodeAt(i);
+
+                await descargarBinario(aliasForPfx + '.pfx', buffer);
+
+                showToast('success', '¡PFX generado con éxito!', `El archivo ${aliasForPfx}.pfx se descargó correctamente. Envialo a tu agente de Grupo Oleum.`, 8000);
+
+                // Move to step 4
+                updateStepper(4);
+
+            } catch (err) {
+                showToast('error', 'Error al generar PFX', 'Revisá que los archivos subidos sean los correctos y correspondan entre sí. El .crt debe ser de ARCA y el .key del Paso 1.');
+                console.error('PFX generation error:', err);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = restorePfxButton();
+        });
+
+        function restorePfxButton() {
+            return '<svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg> Generar Certificado .PFX';
+        }
+
+        // ============================================
+        // DRAG AND DROP SETUP
+        // ============================================
+        function setupDropZone(zoneId, inputId, textId) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const text = document.getElementById(textId);
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.remove('dragover'), false);
+            });
+
+            zone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length) {
+                    input.files = files;
+                    updateText(files[0].name);
+                }
+            });
+
+            input.addEventListener('change', function() {
+                if (this.files && this.files.length) {
+                    updateText(this.files[0].name);
+                }
+            });
+
+            function updateText(fileName) {
+                text.innerHTML = `<span class="file-selected">✓ ${fileName} cargado</span>`;
+                zone.style.borderColor = 'var(--accent-success)';
+                zone.style.background = 'rgba(0, 212, 170, 0.05)';
+            }
+        }
+
+        setupDropZone('drop-zone-crt', 'file-crt', 'text-crt');
+        setupDropZone('drop-zone-key', 'file-key', 'text-key');
+    </script>
+</body>
+</html>
