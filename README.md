@@ -25,4 +25,4 @@ Al funcionar completamente en el navegador sin backend, se garantiza **privacida
 * **[Node-Forge](https://github.com/digitalbazaar/forge)**: Implementación pura en JavaScript de herramientas criptográficas (RSA, PKCS#12, CSR).
 
 ---
-*Desarrollado y optimizado para Grupo Oleum*
+*Un desarrollo de Germán Pratto para Grupo Oleum SRL*
