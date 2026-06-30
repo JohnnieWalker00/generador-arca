@@ -88,7 +88,7 @@
 
         .header-logo {
             margin-bottom: 20px;
-            filter: drop-shadow(0 8px 16px rgba(108, 99, 255, 0.25));
+            filter: drop-shadow(0 8px 24px rgba(117, 170, 219, 0.4));
             animation: floatLogo 6s ease-in-out infinite;
         }
 
@@ -103,7 +103,8 @@
             font-weight: 900;
             letter-spacing: -0.03em;
             margin-bottom: 8px;
-            color: #0f172a; /* Solid very dark blue/black for max legibility */
+            color: #ffffff;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             line-height: 1.1;
         }
 
@@ -892,16 +893,15 @@
     <div class="container">
         <!-- HEADER -->
         <header class="header">
-            <svg class="header-logo" width="64" height="64" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M28 2L52 16V40L28 54L4 40V16L28 2Z" fill="url(#hexGrad)"/>
-                <path d="M28 14L42 22.5V36.5L28 45L14 36.5V22.5L28 14Z" fill="white" opacity="0.2"/>
-                <path d="M28 22L35 26V32L28 36L21 32V26L28 22Z" fill="white"/>
-                <defs>
-                    <linearGradient id="hexGrad" x1="4" y1="2" x2="52" y2="54" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#6C63FF"/>
-                        <stop offset="1" stop-color="#FF6B35"/>
-                    </linearGradient>
-                </defs>
+            <svg class="header-logo" width="72" height="72" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer Escudo (Celeste) -->
+                <path d="M28 2L48 10V26C48 38 39 48 28 52C17 48 8 38 8 26V10L28 2Z" fill="#75AADB"/>
+                <!-- Inner Escudo (Blanco) -->
+                <path d="M28 6L44 12.4V26C44 36 36 44.4 28 47.6C20 44.4 12 36 12 26V12.4L28 6Z" fill="#FFFFFF"/>
+                <!-- Sol de Mayo -->
+                <circle cx="28" cy="27" r="6" fill="#FDB813"/>
+                <circle cx="28" cy="27" r="8" stroke="#FDB813" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <path d="M28 15L29 18L27 18Z M28 39L29 36L27 36Z M40 27L37 26L37 28Z M16 27L19 26L19 28Z" fill="#FDB813"/>
             </svg>
             <h1>Gestor de Certificados ARCA</h1>
             <p>Generá tus archivos de facturación electrónica de forma segura</p>
