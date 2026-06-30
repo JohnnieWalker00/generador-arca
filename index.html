@@ -86,23 +86,54 @@
             align-items: center;
         }
 
-        .header-logo {
-            margin-bottom: 20px;
-            filter: drop-shadow(0 8px 24px rgba(117, 170, 219, 0.4));
-            animation: floatLogo 6s ease-in-out infinite;
+        .arca-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .arca-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+        
+        .arca-separator {
+            height: 28px;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .arca-subtitle {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.2;
+            letter-spacing: 0.02em;
         }
 
-        @keyframes floatLogo {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
+        .arca-country {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .arca-country-text {
+            font-size: 0.7rem;
+            color: #ffffff;
+            line-height: 1.2;
         }
 
         .header h1 {
-            font-size: 2.6rem;
+            font-size: 3rem;
             font-weight: 900;
             letter-spacing: -0.03em;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             color: #ffffff;
             text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             line-height: 1.1;
@@ -116,7 +147,12 @@
         }
         
         @media (max-width: 600px) {
-            .header h1 { font-size: 1.9rem; }
+            .arca-title { font-size: 1.6rem; }
+            .arca-separator { height: 24px; }
+            .arca-subtitle { font-size: 0.65rem; }
+            .arca-country { display: none; } /* Hide on very small screens to avoid overflow */
+            .arca-logo { gap: 8px; margin-bottom: 16px; }
+            .header h1 { font-size: 2.2rem; }
             .header { padding: 40px 10px 20px; }
         }
 
@@ -893,17 +929,22 @@
     <div class="container">
         <!-- HEADER -->
         <header class="header">
-            <svg class="header-logo" width="72" height="72" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Outer Escudo (Celeste) -->
-                <path d="M28 2L48 10V26C48 38 39 48 28 52C17 48 8 38 8 26V10L28 2Z" fill="#75AADB"/>
-                <!-- Inner Escudo (Blanco) -->
-                <path d="M28 6L44 12.4V26C44 36 36 44.4 28 47.6C20 44.4 12 36 12 26V12.4L28 6Z" fill="#FFFFFF"/>
-                <!-- Sol de Mayo -->
-                <circle cx="28" cy="27" r="6" fill="#FDB813"/>
-                <circle cx="28" cy="27" r="8" stroke="#FDB813" stroke-width="1.5" stroke-dasharray="2 2"/>
-                <path d="M28 15L29 18L27 18Z M28 39L29 36L27 36Z M40 27L37 26L37 28Z M16 27L19 26L19 28Z" fill="#FDB813"/>
-            </svg>
-            <h1>Gestor de Certificados ARCA</h1>
+            <h1>Generador de Certificados</h1>
+            <div class="arca-logo">
+                <span class="arca-title">ARCA</span>
+                <span class="arca-separator"></span>
+                <span class="arca-subtitle">AGENCIA DE RECAUDACIÓN<br>Y CONTROL ADUANERO</span>
+                <span class="arca-separator"></span>
+                <div class="arca-country">
+                    <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3)">
+                        <rect width="32" height="6.66" fill="#75AADB"/>
+                        <rect y="6.66" width="32" height="6.66" fill="#FFFFFF"/>
+                        <rect y="13.33" width="32" height="6.66" fill="#75AADB"/>
+                        <circle cx="16" cy="10" r="2.5" fill="#FDB813"/>
+                    </svg>
+                    <span class="arca-country-text">República<br><strong>Argentina</strong></span>
+                </div>
+            </div>
             <p>Generá tus archivos de facturación electrónica de forma segura</p>
         </header>
 
