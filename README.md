@@ -18,7 +18,7 @@ Al funcionar completamente en el navegador sin backend, se garantiza **privacida
 1. **Paso 1 (Generar CSR):** El cliente ingresa su CUIT, Razón Social y elige un Alias. El sistema genera los archivos **.csr** (solicitud) y **.key** (llave privada).
 2. **Paso 2 (Portal ARCA):** El cliente sigue el instructivo desplegable para subir el `.csr` a la web oficial de ARCA y descarga el certificado **.crt**.
 3. **Paso 3 (Generar PFX):** El cliente arrastra el `.crt` (de ARCA) y el `.key` (del Paso 1) a las zonas de carga para obtener el archivo definitivo **.pfx** (sin contraseña).
-4. **Paso 4 (Envío):** Se muestra un panel final con accesos directos de email para enviar el archivo al agente de cuenta o sistemas (como Tango Factura).
+4. **Paso 4 (Envío):** Se muestra un panel final con accesos directos de email para enviar el archivo al agente de cuenta en Grupo Oleum, aunque el certificado generado es 100% compatible con cualquier otro sistema contable externo (como Tango Factura o similares).
 
 ## 🛠️ Tecnologías
 

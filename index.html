@@ -798,25 +798,41 @@
         .email-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            border-radius: var(--radius-sm);
-            background: rgba(255, 255, 255, 0.04);
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
             border: 1px solid var(--border-card);
             transition: var(--transition);
             text-decoration: none;
             color: var(--text-primary);
             font-size: 0.85rem;
             font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .email-item:hover {
-            background: rgba(108, 99, 255, 0.1);
+            background: rgba(108, 99, 255, 0.08);
             border-color: rgba(108, 99, 255, 0.3);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.2);
         }
 
-        .email-item svg { width: 16px; height: 16px; fill: var(--accent-primary); flex-shrink: 0; }
+        .email-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(108, 99, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .email-item svg { display: none; }
 
         /* ============================================
            WARNING BOX
@@ -1196,7 +1212,7 @@
         </section>
 
         <!-- ==========================================
-             PASO 4: ENVIAR / INSTALAR
+             PASO 4: ENVIAR
              ========================================== -->
         <section class="card card-success step-section collapsed" id="section-step4">
             <div class="card-header">
@@ -1204,14 +1220,41 @@
                     <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                 </div>
                 <div>
-                    <div class="card-title">Paso Final: Instalar Certificado</div>
-                    <div class="card-subtitle">Ya tenés tu certificado .PFX listo para ser utilizado</div>
+                    <div class="card-title">Paso Final: Enviar a tu Agente</div>
+                    <div class="card-subtitle">Enviá el archivo .PFX a tu agente de cuenta en Grupo Oleum</div>
                 </div>
             </div>
 
             <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
-                Enviá tu archivo <strong style="color: var(--accent-success);">.pfx</strong> por correo a tu soporte técnico, agente de cuenta, o subilo directamente a tu sistema de facturación.
+                Adjuntá tu archivo <strong style="color: var(--accent-success);">.pfx</strong> en un correo electrónico a tu agente para que lo instale en el sistema de facturación. Hacé clic en el mail de tu agente:
             </p>
+
+            <ul class="email-list">
+                <li><a href="mailto:german.pratto@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">G</div>
+                    <span>german.pratto@grupooleum.com.ar</span>
+                </a></li>
+                <li><a href="mailto:ramiro.dicarlo@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">R</div>
+                    <span>ramiro.dicarlo@grupooleum.com.ar</span>
+                </a></li>
+                <li><a href="mailto:nicolas.chamut@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">N</div>
+                    <span>nicolas.chamut@grupooleum.com.ar</span>
+                </a></li>
+                <li><a href="mailto:julio.herrera@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">J</div>
+                    <span>julio.herrera@grupooleum.com.ar</span>
+                </a></li>
+                <li><a href="mailto:jonas.nisnievich@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">J</div>
+                    <span>jonas.nisnievich@grupooleum.com.ar</span>
+                </a></li>
+                <li><a href="mailto:miguel.agustini@grupooleum.com.ar" class="email-item">
+                    <div class="email-avatar">M</div>
+                    <span>miguel.agustini@grupooleum.com.ar</span>
+                </a></li>
+            </ul>
 
             <div class="warning-box" style="margin-top: 18px;">
                 <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
@@ -1355,9 +1398,18 @@
         </div>
 
         <div class="print-section">
-            <h3 style="margin-top:0">PASO 6 — Instalar el .PFX</h3>
-            <p style="margin-top:5px;">1. Envíe el archivo <b>.pfx</b> a su soporte técnico o instálelo directamente en su sistema de facturación.</p>
-            <p>2. Una vez instalado en el sistema, podrá emitir facturas electrónicas con normalidad.</p>
+            <h3 style="margin-top:0">PASO 6 — Enviar el .PFX a su Agente de Cuenta</h3>
+            <p style="margin-top:5px;">1. Envíe el archivo <b>.pfx</b> como <b>archivo adjunto por correo electrónico</b> a su agente de cuenta en <b>Grupo Oleum</b>.</p>
+            <p>2. Contactos disponibles:</p>
+            <ul style="line-height:2; padding-left:20px;">
+                <li>german.pratto@grupooleum.com.ar</li>
+                <li>ramiro.dicarlo@grupooleum.com.ar</li>
+                <li>nicolas.chamut@grupooleum.com.ar</li>
+                <li>julio.herrera@grupooleum.com.ar</li>
+                <li>jonas.nisnievich@grupooleum.com.ar</li>
+                <li>miguel.agustini@grupooleum.com.ar</li>
+            </ul>
+            <p>3. Su agente instalará el certificado en el sistema de facturación. Una vez instalado, podrá emitir facturas electrónicas.</p>
         </div>
 
         <div class="print-section">
@@ -1367,7 +1419,7 @@
                 <tr><td><b>.csr</b></td><td>Solicitud de certificado</td><td>Se sube al portal de ARCA (PASO 3). Después de usarlo no lo necesita más.</td></tr>
                 <tr><td><b>.key</b></td><td>Llave privada (secreta)</td><td>Se usa para generar el .pfx (PASO 5). Guardar en lugar seguro. NO compartir.</td></tr>
                 <tr><td><b>.crt</b></td><td>Certificado emitido por ARCA</td><td>Se descarga de ARCA y se usa para generar el .pfx (PASO 5).</td></tr>
-                <tr><td><b>.pfx</b></td><td>Certificado final para facturar</td><td>Se sube o instala en el sistema de facturación (PASO 6).</td></tr>
+                <tr><td><b>.pfx</b></td><td>Certificado final para facturar</td><td>Se envía al agente de Grupo Oleum (PASO 6) para instalar en el sistema.</td></tr>
             </table>
         </div>
 
@@ -1802,7 +1854,7 @@
 
                 await descargarBinario(aliasForPfx + '.pfx', buffer);
 
-                showToast('success', '¡PFX generado con éxito!', `El archivo ${aliasForPfx}.pfx se descargó correctamente. Envialo a tu sistema o soporte técnico.`, 8000);
+                showToast('success', '¡PFX generado con éxito!', `El archivo ${aliasForPfx}.pfx se descargó correctamente. Envialo a tu agente de Grupo Oleum.`, 8000);
 
                 // Move to step 4
                 updateStepper(4);
